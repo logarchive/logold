@@ -41,7 +41,8 @@
     <main id="status">Loading Log from jsDelivr…</main>
     <script>
       (async function () {
-        const cdn = "https://cdn.jsdelivr.net/gh/logthedeveloper/log@main";
+        const cdn =
+          "https://cdn.jsdelivr.net/gh/logthedeveloper/log@1c7a942c3cc094b4f9219b06896cd0eaa9f1f228";
         const appBase = `${cdn}/b/`;
         const status = document.getElementById("status");
 
@@ -55,9 +56,28 @@
             await response.text(),
             "text/html",
           );
+          app.querySelectorAll("[href], [src]").forEach((element) => {
+            for (const attribute of ["href", "src"]) {
+              const value = element.getAttribute(attribute);
+              if (value?.startsWith("https://cdn.jsdelivr.net/gh/logthedeveloper/log@main/")) {
+                element.setAttribute(
+                  attribute,
+                  value.replace(
+                    "https://cdn.jsdelivr.net/gh/logthedeveloper/log@main/",
+                    `${cdn}/`,
+                  ),
+                );
+              }
+            }
+          });
+
           const base = app.createElement("base");
           base.href = appBase;
           app.head.prepend(base);
+
+          const urlBase = app.createElement("script");
+          urlBase.textContent = `const NativeURL=window.URL;window.URL=class extends NativeURL{constructor(input,base){super(input,base==="about:srcdoc"||base==="about:blank"?${JSON.stringify(appBase)}:base)}};`;
+          app.head.prepend(urlBase);
 
           let cdnLoaderFound = false;
           app.querySelectorAll("script").forEach((script) => {
@@ -78,6 +98,25 @@
               '"probe":"build.txt"',
               '"probe":"assets/index-S-LzHe8M-1a510579.css"',
             );
+            for (const [stale, current] of [
+              [
+                "sha384-x2PJfPewBXe3QiD2moo22myv12szD20iiHt8cmm6w2jDv+eqOziekeNhoq5yvr+Z",
+                "sha384-jCS5tiXdNW2HyRpAy50QBI26o43zHDwkhXEZMjU/ne1Z5X5VjuJw6y4A6GvUx1PW",
+              ],
+              [
+                "sha384-bFJkChGr4LvJtDXA/+xcjKk04BBW74Byb+3y57GtAp8AU6QY8ldoO5d+RN6r8tdX",
+                "sha384-YN1iLRbLdQV4dl/mXa8j0BeO0Q0UCZ8B7kBxjjPFgif4K/vR2c6/RcuiwenFAoCt",
+              ],
+              [
+                "sha384-I37Ks0xr3GV4LMVTLjaHxR80VpYWlJNLNexRGl7trgpG6YO6QUL23grD9OAetPNi",
+                "sha384-vth17Nm+h9O9ohAZRtdpgesrWL3TLyjCsoV/EAklwZyo/rP5xSV+aaUEnMXs3/2z",
+              ],
+            ]) {
+              if (!loader.includes(stale)) {
+                throw new Error("An app asset integrity value changed.");
+              }
+              loader = loader.split(stale).join(current);
+            }
             loader = loader.replace(
               "/^[0-9a-f]{16}$/.test(n.trim())",
               "n.trim().length > 0",
@@ -103,8 +142,22 @@
           const frame = document.createElement("iframe");
           frame.title = "Log";
           frame.allow = "autoplay; fullscreen; gamepad; clipboard-read; clipboard-write";
-          frame.addEventListener("load", () => status.remove(), { once: true });
-          frame.srcdoc = `<!doctype html>${app.documentElement.outerHTML}`;
+          frame.addEventListener(
+            "load",
+            () => {
+              const frameDocument = frame.contentDocument;
+              if (!frameDocument) {
+                throw new Error("The browser blocked the Log iframe.");
+              }
+
+              frameDocument.open();
+              frameDocument.write(`<!doctype html>${app.documentElement.outerHTML}`);
+              frameDocument.close();
+              status.remove();
+            },
+            { once: true },
+          );
+          frame.src = "about:blank";
           document.body.append(frame);
         } catch (error) {
           status.textContent = `Could not load Log: ${error.message}. Allow scripts and cross-origin requests in this HTML runner, then try again.`;

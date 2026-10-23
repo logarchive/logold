@@ -37,11 +37,24 @@ Log site first.
 
 The root `index.html` is a standalone HTML-runner launcher: it fetches the app
 HTML from jsDelivr, then loads its CSS and JavaScript from the same CDN. It
-requires the runner to allow JavaScript, cross-origin fetches, and iframe
-content. `index.svg` loads the sibling root `index.html`; keep both files
-together when using the SVG. Push the repository changes to `main` before
-using the launcher, and allow time for jsDelivr's cache to refresh. This is a
-launcher, not a self-contained copy of the app.
+requires the runner to allow JavaScript, cross-origin fetches, and an
+`about:blank` iframe. `index.svg` loads the sibling root `index.html`; keep
+both files together when using the SVG. The launcher pins the CDN to the
+commit hash inside `index.html` so a stale jsDelivr `@main` cache cannot
+revert the app to Cherri. After pushing later app changes, update that hash
+to the new commit. This is a launcher, not a self-contained copy of the app.
+
+### Google Apps Script
+
+Create an Apps Script project with an HTML file named `index`, paste the root
+`index.html` launcher into it, and paste `Code.gs` into the script editor.
+Deploy it as a Web app, then open the deployment URL. The script serves the
+launcher only; app assets still come from jsDelivr and the app's existing
+backend remains external.
+
+Brave does not recognize `log://` as a website address. Open the HTTPS Google
+Apps Script deployment URL in Brave; use `log://home` or `log://game/<slug>`
+only in Log's own embedded address bar.
 
 ## Discord
 
